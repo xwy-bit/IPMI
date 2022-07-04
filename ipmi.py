@@ -1,12 +1,4 @@
-from email import header
-from tokenize import cookie_re
-from turtle import pos
 import requests
-import re
-import datetime
-from requests.sessions import session   
-import ssl
-import time
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
