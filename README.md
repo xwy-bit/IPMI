@@ -1,6 +1,6 @@
 ![](https://img.shields.io/badge/Author-Wayen--Xu-green)  ![](https://img.shields.io/badge/Organization-ACSA--ASC22-blue)
 # Moniter of Servers
-## requriments
+## requirements
 - pyQt5
 - pyqtgraph
 - requests
