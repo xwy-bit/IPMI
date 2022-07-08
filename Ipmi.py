@@ -1,4 +1,6 @@
+from statistics import mode
 import requests
+import json
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -11,6 +13,9 @@ class ipmi:
         self.random_tag_url = self.ipmi_url+'/api/randomtag'
         self.login_url = self.ipmi_url+'/api/session'
         self.psu_url = self.ipmi_url+'/api/status/psu_info'
+        self.fans_url = self.ipmi_url+'/api/status/fan_info'
+        self.fans_control_url = self.ipmi_url+'/api/settings/fans-mode'
+        self.set_fans_url = self.ipmi_url +'/api/settings/fan/'
     def establish(self):
         self.sess = requests.session()
         random_tag_res = self.sess.get(self.random_tag_url, verify=False)
@@ -38,13 +43,43 @@ class ipmi:
         psu_info = psu_res.content.decode()
         psu = int(psu_info[psu_info.index("\"present_power_reading\": ")+24:psu_info.index(",",psu_info.index("\"present_power_reading\": ")+24)])
         return psu
+    def get_fans(self,get_type = 'power'):
+        fans_rec = self.sess.get(self.fans_url,headers = self.send_header,verify=False)
+        fan_info = fans_rec.content.decode()
+        fan_info_json = json.loads(fan_info)
+        if get_type == 'power':
+            return fan_info_json['fans_power']
+        elif get_type == 'pwm':
+            pwm_list = []
+            fans_info_detail = fan_info_json['fans']
+            for fan_index in fans_info_detail:
+                pwm_list.append(fan_index['speed_percent'])
+            return pwm_list
+        print(fan_info)
+    def control_fans(self,mode = 'auto',pwd = 66):
+        if mode == 'manual':
+            manual_json = {"control_mode": "manual"}
+            self.sess.put(self.fans_control_url,headers = self.send_header,json=manual_json)
+            fans_num = len(self.get_fans('pwm'))
+            set_fans_json = {"duty": pwd}
+            for ii in range(fans_num):
+                self.sess.put(self.set_fans_url+str(ii),headers = self.send_header,json = set_fans_json)
+        else:
+            auto_json = {"control_mode": "auto"}
+            self.sess.put(self.fans_control_url,headers = self.send_header,json=auto_json)
     def close(self):
         self.sess.close()
 
 
 if __name__ == '__main__':
-    i0 = ipmi('10.123.456.789','ADMIN','ADMIN')
+    with open('login.json','r') as f:
+        login2str = f.read()
+        print(login2str)
+        login2json = json.loads(login2str)
+        ip_str = login2json['ip']
+        usr_str = login2json['user']
+        passwd_str = login2json['password']
+    i0 = ipmi(ip_str,usr_str,passwd_str)
     i0.establish()
-    for _ in range(10):
-        print(i0.get_power())
+    print(i0.control_fans())
     i0.close()

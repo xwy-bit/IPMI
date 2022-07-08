@@ -1,3 +1,5 @@
 venv
 config.csv
 __pycache__/
+login.json
+/back/**
